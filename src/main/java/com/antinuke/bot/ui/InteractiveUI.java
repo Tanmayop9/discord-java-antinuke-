@@ -1,6 +1,7 @@
 package com.antinuke.bot.ui;
 
 import com.antinuke.bot.config.BotConfig;
+import com.antinuke.bot.utils.ExecutionTimer;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -23,6 +24,10 @@ public class InteractiveUI {
      * Create main dashboard embed with navigation buttons
      */
     public static MessageEmbed createDashboardEmbed(Guild guild, BotConfig config) {
+        return createDashboardEmbed(guild, config, null);
+    }
+    
+    public static MessageEmbed createDashboardEmbed(Guild guild, BotConfig config, ExecutionTimer timer) {
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("🛡️ Advanced Antinuke Dashboard")
                 .setDescription("**Server:** " + guild.getName() + "\n" +
@@ -63,8 +68,7 @@ public class InteractiveUI {
                                 config.getAntiNuke().getMaxActionsPerMinute(),
                                 config.getAntiNuke().getWhitelistedUsers().size()
                         ), true)
-                .setFooter("Use the buttons below to configure • Dual Monitoring: " + 
-                        (config.getDualMonitoring().isEnabled() ? "Active" : "Inactive"))
+                .setFooter(timer != null ? timer.getFooterText() : "Use the buttons below to configure")
                 .setThumbnail(guild.getIconUrl());
         
         return embed.build();
@@ -105,6 +109,10 @@ public class InteractiveUI {
      * Create protections configuration embed
      */
     public static MessageEmbed createProtectionsEmbed(BotConfig config) {
+        return createProtectionsEmbed(config, null);
+    }
+    
+    public static MessageEmbed createProtectionsEmbed(BotConfig config, ExecutionTimer timer) {
         EmbedBuilder embed = new EmbedBuilder()
                 .setTitle("🔒 Protection Settings")
                 .setDescription("Configure which protections are active")
@@ -148,7 +156,8 @@ public class InteractiveUI {
                                 getStatus(config.getAntiNuke().getProtections().isAntiEmoji()),
                                 getStatus(config.getAntiNuke().getProtections().isAntiSticker()),
                                 getStatus(config.getAntiNuke().getProtections().isAntiServerUpdate())
-                        ), false);
+                        ), false)
+                .setFooter(timer != null ? timer.getFooterText() : "Select protections to configure");
         
         return embed.build();
     }

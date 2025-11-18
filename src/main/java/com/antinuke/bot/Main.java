@@ -164,6 +164,8 @@ public class Main {
     
     private static void registerCommands() {
         jda.updateCommands().addCommands(
+                Commands.slash("setup", "Setup antinuke system (creates logs category, channel, and bypass role)"),
+                
                 Commands.slash("antinuke", "Open the antinuke dashboard"),
                 
                 Commands.slash("whitelist", "Manage whitelist")

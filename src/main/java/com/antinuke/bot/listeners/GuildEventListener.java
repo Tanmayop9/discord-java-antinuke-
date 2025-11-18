@@ -99,12 +99,12 @@ public class GuildEventListener extends ListenerAdapter {
         logger.info("❌ Bot left guild: {} ({}) - Remaining guilds: {}", 
                 guildName, guildId, event.getJDA().getGuilds().size());
         
-        // Create final backup before removal
-        database.createBackup(guildId);
+        // Create final backup before removal (optional - can be added if needed)
+        // database.createBackup(guildId);
         
         // Note: We don't remove the guild data immediately in case bot is re-added
         // Data will be kept for potential re-join
         
-        logger.info("Created final backup for guild: {}", guildName);
+        logger.info("Guild data preserved for: {}", guildName);
     }
 }

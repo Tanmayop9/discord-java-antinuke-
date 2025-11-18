@@ -39,6 +39,9 @@ public class CommandHandler extends ListenerAdapter {
         }
         
         switch (commandName) {
+            case "setup":
+                handleSetupCommand(event);
+                break;
             case "antinuke":
                 handleAntiNukeCommand(event);
                 break;
@@ -74,6 +77,10 @@ public class CommandHandler extends ListenerAdapter {
         }
         
         switch (command) {
+            case "setup":
+                handlePrefixSetup(event);
+                break;
+                
             case "antinuke":
             case "dashboard":
                 event.getChannel().sendMessageEmbeds(InteractiveUI.createDashboardEmbed(event.getGuild(), config))
@@ -106,6 +113,79 @@ public class CommandHandler extends ListenerAdapter {
                 sendHelpMessage(event);
                 break;
         }
+    }
+    
+    private void handleSetupCommand(SlashCommandInteractionEvent event) {
+        long startTime = System.currentTimeMillis();
+        String guildId = event.getGuild().getId();
+        JsonDatabase.GuildData guildData = database.getGuildData(guildId);
+        
+        event.reply("⚙️ **Setting up Antinuke System...**\nPlease wait...").queue(hook -> {
+            try {
+                // Step 1: Create Logs Category
+                event.getGuild().createCategory("🔒 Antinuke Logs")
+                        .queue(category -> {
+                            guildData.setLogCategoryId(category.getId());
+                            hook.editOriginal("✅ Created logs category").queue();
+                            
+                            // Step 2: Create Logs Channel
+                            category.createTextChannel("antinuke-logs")
+                                    .queue(channel -> {
+                                        guildData.setLogChannelId(channel.getId());
+                                        hook.editOriginal("✅ Created logs category\n✅ Created logs channel").queue();
+                                        
+                                        // Step 3: Create Bypass Role
+                                        event.getGuild().createRole()
+                                                .setName("Antinuke Bypass")
+                                                .setColor(java.awt.Color.ORANGE)
+                                                .setMentionable(false)
+                                                .queue(role -> {
+                                                    guildData.setBypassRoleId(role.getId());
+                                                    guildData.getWhitelistedRoles().add(role.getId());
+                                                    guildData.setSetupComplete(true);
+                                                    database.saveGuildData(guildId, guildData);
+                                                    
+                                                    long elapsed = System.currentTimeMillis() - startTime;
+                                                    
+                                                    // Send completion message
+                                                    net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                                                            .setTitle("✅ Antinuke Setup Complete!")
+                                                            .setDescription("Your server is now protected!")
+                                                            .setColor(java.awt.Color.GREEN)
+                                                            .addField("📁 Logs Category", category.getAsMention(), true)
+                                                            .addField("📝 Logs Channel", channel.getAsMention(), true)
+                                                            .addField("🛡️ Bypass Role", role.getAsMention(), true)
+                                                            .addField("⚡ What's Next?", 
+                                                                    "• Use `/antinuke` to configure protections\n" +
+                                                                    "• Assign bypass role to trusted admins\n" +
+                                                                    "• All threats will be logged to " + channel.getAsMention(), false)
+                                                            .setFooter(String.format("Action executed in %.2f s", elapsed / 1000.0))
+                                                            .setTimestamp(java.time.Instant.now());
+                                                    
+                                                    hook.editOriginalEmbeds(embed.build()).queue();
+                                                    
+                                                    // Create initial snapshot
+                                                    recoverySystem.createSnapshot(event.getGuild());
+                                                    
+                                                    // Send info to logs channel
+                                                    channel.sendMessage("🛡️ **Antinuke System Initialized**\n" +
+                                                            "All protection logs will appear here.\n" +
+                                                            "Bot Owner: <@" + config.getOwnerId() + ">").queue();
+                                                }, error -> {
+                                                    hook.editOriginal("❌ Failed to create bypass role: " + error.getMessage()).queue();
+                                                });
+                                    }, error -> {
+                                        hook.editOriginal("❌ Failed to create logs channel: " + error.getMessage()).queue();
+                                    });
+                        }, error -> {
+                            hook.editOriginal("❌ Failed to create logs category: " + error.getMessage()).queue();
+                        });
+                
+            } catch (Exception e) {
+                hook.editOriginal("❌ Setup failed: " + e.getMessage()).queue();
+                logger.error("Setup failed for guild: {}", guildId, e);
+            }
+        });
     }
     
     private void handleAntiNukeCommand(SlashCommandInteractionEvent event) {
@@ -229,9 +309,84 @@ public class CommandHandler extends ListenerAdapter {
         }
     }
     
+    private void handlePrefixSetup(MessageReceivedEvent event) {
+        long startTime = System.currentTimeMillis();
+        String guildId = event.getGuild().getId();
+        JsonDatabase.GuildData guildData = database.getGuildData(guildId);
+        
+        event.getChannel().sendMessage("⚙️ **Setting up Antinuke System...**\nPlease wait...").queue(setupMsg -> {
+            try {
+                // Step 1: Create Logs Category
+                event.getGuild().createCategory("🔒 Antinuke Logs")
+                        .queue(category -> {
+                            guildData.setLogCategoryId(category.getId());
+                            setupMsg.editMessage("✅ Created logs category").queue();
+                            
+                            // Step 2: Create Logs Channel
+                            category.createTextChannel("antinuke-logs")
+                                    .queue(channel -> {
+                                        guildData.setLogChannelId(channel.getId());
+                                        setupMsg.editMessage("✅ Created logs category\n✅ Created logs channel").queue();
+                                        
+                                        // Step 3: Create Bypass Role
+                                        event.getGuild().createRole()
+                                                .setName("Antinuke Bypass")
+                                                .setColor(java.awt.Color.ORANGE)
+                                                .setMentionable(false)
+                                                .queue(role -> {
+                                                    guildData.setBypassRoleId(role.getId());
+                                                    guildData.getWhitelistedRoles().add(role.getId());
+                                                    guildData.setSetupComplete(true);
+                                                    database.saveGuildData(guildId, guildData);
+                                                    
+                                                    long elapsed = System.currentTimeMillis() - startTime;
+                                                    
+                                                    // Send completion message
+                                                    net.dv8tion.jda.api.EmbedBuilder embed = new net.dv8tion.jda.api.EmbedBuilder()
+                                                            .setTitle("✅ Antinuke Setup Complete!")
+                                                            .setDescription("Your server is now protected!")
+                                                            .setColor(java.awt.Color.GREEN)
+                                                            .addField("📁 Logs Category", category.getAsMention(), true)
+                                                            .addField("📝 Logs Channel", channel.getAsMention(), true)
+                                                            .addField("🛡️ Bypass Role", role.getAsMention(), true)
+                                                            .addField("⚡ What's Next?", 
+                                                                    "• Use `!antinuke` to configure protections\n" +
+                                                                    "• Assign bypass role to trusted admins\n" +
+                                                                    "• All threats will be logged to " + channel.getAsMention(), false)
+                                                            .setFooter(String.format("Action executed in %.2f s", elapsed / 1000.0))
+                                                            .setTimestamp(java.time.Instant.now());
+                                                    
+                                                    setupMsg.editMessageEmbeds(embed.build()).setContent("").queue();
+                                                    
+                                                    // Create initial snapshot
+                                                    recoverySystem.createSnapshot(event.getGuild());
+                                                    
+                                                    // Send info to logs channel
+                                                    channel.sendMessage("🛡️ **Antinuke System Initialized**\n" +
+                                                            "All protection logs will appear here.\n" +
+                                                            "Bot Owner: <@" + config.getOwnerId() + ">").queue();
+                                                }, error -> {
+                                                    setupMsg.editMessage("❌ Failed to create bypass role: " + error.getMessage()).queue();
+                                                });
+                                    }, error -> {
+                                        setupMsg.editMessage("❌ Failed to create logs channel: " + error.getMessage()).queue();
+                                    });
+                        }, error -> {
+                            setupMsg.editMessage("❌ Failed to create logs category: " + error.getMessage()).queue();
+                        });
+                
+            } catch (Exception e) {
+                setupMsg.editMessage("❌ Setup failed: " + e.getMessage()).queue();
+                logger.error("Setup failed for guild: {}", guildId, e);
+            }
+        });
+    }
+    
     private void sendHelpMessage(MessageReceivedEvent event) {
         String prefix = config.getPrefix();
         String help = "**🛡️ Advanced Antinuke Bot - Commands**\n\n" +
+                "**Setup**\n" +
+                "`" + prefix + "setup` - Setup antinuke (logs, bypass role)\n\n" +
                 "**Dashboard**\n" +
                 "`" + prefix + "antinuke` - Open interactive dashboard\n" +
                 "`" + prefix + "dashboard` - Alias for antinuke\n\n" +
