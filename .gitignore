@@ -28,8 +28,8 @@ buildNumber.properties
 src/main/resources/config.json
 config.json
 
-# Database
-database/
+# Runtime Database (not source code)
+/database/
 
 # OS
 .DS_Store
